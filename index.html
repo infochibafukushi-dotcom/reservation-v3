@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>介護タクシー予約</title>
+    <meta name="description" content="介護タクシー予約システム 7日固定カレンダー" />
+  </head>
+  <body>
+    <header>
+      <h1>介護タクシー予約</h1>
+      <p>7日固定カレンダー（UI初期版）</p>
+    </header>
+
+    <main>
+      <section aria-labelledby="calendar-title">
+        <h2 id="calendar-title">予約カレンダー</h2>
+        <p>
+          ※ 現在は index.html のみ。次ステップで <code>app.js</code> に表示制御と JSON
+          連携を追加します。
+        </p>
+
+        <div role="list" aria-label="7日カレンダー">
+          <article role="listitem" aria-labelledby="day-1">
+            <h3 id="day-1">1日目</h3>
+            <ul>
+              <li><button type="button" data-date="day1" data-time="09:00">09:00 ○</button></li>
+              <li><button type="button" data-date="day1" data-time="10:00">10:00 ○</button></li>
+              <li><button type="button" data-date="day1" data-time="11:00">11:00 ○</button></li>
+              <li><button type="button" data-date="day1" data-time="12:00">12:00 ○</button></li>
+              <li><button type="button" data-date="day1" data-time="13:00">13:00 ○</button></li>
+              <li><button type="button" data-date="day1" data-time="14:00">14:00 ○</button></li>
+              <li><button type="button" data-date="day1" data-time="15:00">15:00 ○</button></li>
+              <li><button type="button" data-date="day1" data-time="16:00">16:00 ○</button></li>
+              <li><button type="button" data-date="day1" data-time="17:00">17:00 ○</button></li>
+              <li><button type="button" data-date="day1" data-time="18:00">18:00 ○</button></li>
+            </ul>
+          </article>
+
+          <article role="listitem" aria-labelledby="day-2">
+            <h3 id="day-2">2日目</h3>
+            <ul>
+              <li><button type="button" data-date="day2" data-time="09:00">09:00 ○</button></li>
+              <li><button type="button" data-date="day2" data-time="10:00">10:00 ○</button></li>
+              <li><button type="button" data-date="day2" data-time="11:00">11:00 ○</button></li>
+              <li><button type="button" data-date="day2" data-time="12:00">12:00 ○</button></li>
+              <li><button type="button" data-date="day2" data-time="13:00">13:00 ○</button></li>
+              <li><button type="button" data-date="day2" data-time="14:00">14:00 ○</button></li>
+              <li><button type="button" data-date="day2" data-time="15:00">15:00 ○</button></li>
+              <li><button type="button" data-date="day2" data-time="16:00">16:00 ○</button></li>
+              <li><button type="button" data-date="day2" data-time="17:00">17:00 ○</button></li>
+              <li><button type="button" data-date="day2" data-time="18:00">18:00 ○</button></li>
+            </ul>
+          </article>
+
+          <article role="listitem" aria-labelledby="day-3">
+            <h3 id="day-3">3日目</h3>
+            <ul>
+              <li><button type="button" data-date="day3" data-time="09:00">09:00 ○</button></li>
+              <li><button type="button" data-date="day3" data-time="10:00">10:00 ○</button></li>
+              <li><button type="button" data-date="day3" data-time="11:00">11:00 ○</button></li>
+              <li><button type="button" data-date="day3" data-time="12:00">12:00 ○</button></li>
+              <li><button type="button" data-date="day3" data-time="13:00">13:00 ○</button></li>
+              <li><button type="button" data-date="day3" data-time="14:00">14:00 ○</button></li>
+              <li><button type="button" data-date="day3" data-time="15:00">15:00 ○</button></li>
+              <li><button type="button" data-date="day3" data-time="16:00">16:00 ○</button></li>
+              <li><button type="button" data-date="day3" data-time="17:00">17:00 ○</button></li>
+              <li><button type="button" data-date="day3" data-time="18:00">18:00 ○</button></li>
+            </ul>
+          </article>
+
+          <article role="listitem" aria-labelledby="day-4">
+            <h3 id="day-4">4日目</h3>
+            <ul>
+              <li><button type="button" data-date="day4" data-time="09:00">09:00 ○</button></li>
+              <li><button type="button" data-date="day4" data-time="10:00">10:00 ○</button></li>
+              <li><button type="button" data-date="day4" data-time="11:00">11:00 ○</button></li>
+              <li><button type="button" data-date="day4" data-time="12:00">12:00 ○</button></li>
+              <li><button type="button" data-date="day4" data-time="13:00">13:00 ○</button></li>
+              <li><button type="button" data-date="day4" data-time="14:00">14:00 ○</button></li>
+              <li><button type="button" data-date="day4" data-time="15:00">15:00 ○</button></li>
+              <li><button type="button" data-date="day4" data-time="16:00">16:00 ○</button></li>
+              <li><button type="button" data-date="day4" data-time="17:00">17:00 ○</button></li>
+              <li><button type="button" data-date="day4" data-time="18:00">18:00 ○</button></li>
+            </ul>
+          </article>
+
+          <article role="listitem" aria-labelledby="day-5">
+            <h3 id="day-5">5日目</h3>
+            <ul>
+              <li><button type="button" data-date="day5" data-time="09:00">09:00 ○</button></li>
+              <li><button type="button" data-date="day5" data-time="10:00">10:00 ○</button></li>
+              <li><button type="button" data-date="day5" data-time="11:00">11:00 ○</button></li>
+              <li><button type="button" data-date="day5" data-time="12:00">12:00 ○</button></li>
+              <li><button type="button" data-date="day5" data-time="13:00">13:00 ○</button></li>
+              <li><button type="button" data-date="day5" data-time="14:00">14:00 ○</button></li>
+              <li><button type="button" data-date="day5" data-time="15:00">15:00 ○</button></li>
+              <li><button type="button" data-date="day5" data-time="16:00">16:00 ○</button></li>
+              <li><button type="button" data-date="day5" data-time="17:00">17:00 ○</button></li>
+              <li><button type="button" data-date="day5" data-time="18:00">18:00 ○</button></li>
+            </ul>
+          </article>
+
+          <article role="listitem" aria-labelledby="day-6">
+            <h3 id="day-6">6日目</h3>
+            <ul>
+              <li><button type="button" data-date="day6" data-time="09:00">09:00 ○</button></li>
+              <li><button type="button" data-date="day6" data-time="10:00">10:00 ○</button></li>
+              <li><button type="button" data-date="day6" data-time="11:00">11:00 ○</button></li>
+              <li><button type="button" data-date="day6" data-time="12:00">12:00 ○</button></li>
+              <li><button type="button" data-date="day6" data-time="13:00">13:00 ○</button></li>
+              <li><button type="button" data-date="day6" data-time="14:00">14:00 ○</button></li>
+              <li><button type="button" data-date="day6" data-time="15:00">15:00 ○</button></li>
+              <li><button type="button" data-date="day6" data-time="16:00">16:00 ○</button></li>
+              <li><button type="button" data-date="day6" data-time="17:00">17:00 ○</button></li>
+              <li><button type="button" data-date="day6" data-time="18:00">18:00 ○</button></li>
+            </ul>
+          </article>
+
+          <article role="listitem" aria-labelledby="day-7">
+            <h3 id="day-7">7日目</h3>
+            <ul>
+              <li><button type="button" data-date="day7" data-time="09:00">09:00 ○</button></li>
+              <li><button type="button" data-date="day7" data-time="10:00">10:00 ○</button></li>
+              <li><button type="button" data-date="day7" data-time="11:00">11:00 ○</button></li>
+              <li><button type="button" data-date="day7" data-time="12:00">12:00 ○</button></li>
+              <li><button type="button" data-date="day7" data-time="13:00">13:00 ○</button></li>
+              <li><button type="button" data-date="day7" data-time="14:00">14:00 ○</button></li>
+              <li><button type="button" data-date="day7" data-time="15:00">15:00 ○</button></li>
+              <li><button type="button" data-date="day7" data-time="16:00">16:00 ○</button></li>
+              <li><button type="button" data-date="day7" data-time="17:00">17:00 ○</button></li>
+              <li><button type="button" data-date="day7" data-time="18:00">18:00 ○</button></li>
+            </ul>
+          </article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
