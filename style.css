@@ -6,11 +6,10 @@
   --muted: #6b7280;
   --primary: #ef4f8f;
   --ng: #9ca3af;
-  --warn: #d97706;
-  --danger: #dc2626;
+    --danger: #dc2626;
 }
 * { box-sizing: border-box; }
-body { margin: 0; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Yu Gothic",sans-serif; background: var(--bg); color: var(--text); }
+body { margin: 0; overflow-x: hidden; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Yu Gothic",sans-serif; background: var(--bg); color: var(--text); }
 .app-shell { max-width: 520px; margin: 0 auto; min-height: 100dvh; }
 .topbar { position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line); padding: 12px; }
 .topbar h1 { margin: 0; font-size: 18px; }
@@ -19,6 +18,8 @@ body { margin: 0; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Robot
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
 .card h2 { margin: 0 0 6px; font-size: 16px; }
 .muted { color: var(--muted); font-size: 12px; margin: 0 0 8px; }
+.date-nav { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 6px; }
+.date-pill { font-size: 10px; text-align: center; padding: 4px 2px; border-radius: 6px; background: #f9fafb; border: 1px solid var(--line); }
 .list { display: grid; gap: 8px; }
 .item { border: 1px solid var(--line); border-radius: 10px; padding: 8px; font-size: 13px; }
 
@@ -26,9 +27,9 @@ body { margin: 0; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Robot
 .cell { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); min-height: 40px; display: grid; place-items: center; font-size: 12px; }
 .cell.head, .cell.time { background: #f9fafb; font-weight: 700; }
 .cell:nth-child(8n) { border-right: 0; }
-.slot-btn { width: 100%; height: 100%; border: 1px solid transparent; border-radius: 8px; background: #fff; font-size: 15px; font-weight: 700; color: var(--primary); }
+.slot-btn { width: 100%; height: 100%; border: 1px solid transparent; border-radius: 8px; background: #fff; font-size: 12px; font-weight: 700; color: var(--primary); display: grid; place-items: center; line-height: 1.1; }
+.slot-btn small { font-size: 12px; }
 .slot-btn.open { color: var(--primary); }
-.slot-btn.limited { color: var(--warn); }
 .slot-btn.blocked, .slot-btn.reserved { color: var(--ng); background: #f3f4f6; }
 .slot-btn.is-selected { border-color: var(--primary); box-shadow: 0 0 0 2px #ffd0e3 inset; }
 .slot-btn:disabled { cursor: not-allowed; }
