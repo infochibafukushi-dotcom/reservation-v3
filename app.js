@@ -10,11 +10,11 @@
   // ---- Backend integration (Cloudflare disabled / GitHub Contents API enabled) ----
   const CLOUDFLARE_DISABLED = true; // Cloudflare処理は無効化（削除しない方針に合わせる）
   const GITHUB_CONFIG = {
-    enabled: false, // trueにするとGitHub Contents API同期を試行
+    enabled: true, // trueにするとGitHub Contents API同期を試行
     owner: '',
     repo: '',
     branch: 'main',
-    tokenStorageKey: 'careTaxi.github.token',
+    tokenStorageKey: 'chiba_care_taxi_github_backend_v1',
     settingsPath: 'data/settings.json',
     reservationsPath: 'data/reservations.json',
   };
@@ -74,6 +74,9 @@
       const reservationsRemote = await githubBackend.readJSON(GITHUB_CONFIG.reservationsPath);
       save(STORAGE.settings, settingsRemote.json);
       save(STORAGE.reservations, reservationsRemote.json);
+      // 常に取得データで上書き反映
+      setSettings(settingsRemote.json);
+      setReservations(reservationsRemote.json);
     } catch (e) {
       console.warn('[GitHub Bootstrap]', e.message);
     }
