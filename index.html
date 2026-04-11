@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>介護タクシー予約 | 公開画面</title>
+    <meta name="description" content="介護タクシー予約システム（公開画面）" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-page="public">
+    <button id="secretAdminIcon" class="secret-icon" aria-label="管理入口">⚙</button>
+
+    <div class="app-shell">
+      <header class="topbar">
+        <h1>介護タクシー予約</h1>
+        <p class="subtitle">丁寧・安全な送迎をご提供します</p>
+        <p id="ruleSummary">読み込み中...</p>
+      </header>
+
+      <main class="page-grid">
+        <section class="card">
+          <button class="secondary full" type="button">他時間予約</button>
+          <p class="muted center">◎ 予約可能 ／ × 予約不可 ／ ◎ 読み込み中（確定前）</p>
+          <p class="muted center">上下・左右にスクロールして、他の日付や時間を確認できます。</p>
+          <div id="dateNav" class="date-nav"></div>
+          <div class="calendar-wrap">
+            <div id="calendarGrid" class="calendar-grid"></div>
+          </div>
+        </section>
+
+        <section class="card hidden" id="doneCard">
+          <h2>ご予約ありがとうございます</h2>
+          <div id="doneMessage" class="item"></div>
+        </section>
+
+        <section class="card">
+          <p class="muted center">空き枠（◎）を押すだけで入力画面が開きます。</p>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="bookingModal" class="modal">
+      <form id="bookingForm" method="dialog">
+        <div class="modal-head">
+          <h3>ご予約</h3>
+          <button type="button" id="closeModalX" class="icon-btn">✕</button>
+        </div>
+        <p id="selectedSlot" class="muted"></p>
+
+        <label class="checkbox-item">
+          <input id="privacyAgree" name="privacyAgree" type="checkbox" required />
+          プライバシーポリシーに同意する（必須）
+        </label>
+
+        <h4>基本情報（必須項目）</h4>
+        <label>ご利用区分 *
+          <select name="usageType" required>
+            <option value="">選択してください</option>
+            <option value="first">初めて</option>
+            <option value="repeat">2回目以上</option>
+          </select>
+        </label>
+        <label>お名前(カタカナ) *<input name="name" required maxlength="40" placeholder="ヤマダ タロウ" /></label>
+        <label>連絡先(電話番号) *<input name="phone" required inputmode="tel" placeholder="090-1234-5678" /></label>
+        <label>お伺い場所または施設名 *<input name="pickup" required maxlength="80" placeholder="東京都渋谷区..." /></label>
+
+        <h4>追加情報（任意項目）</h4>
+        <label>送迎先住所または施設名<input name="dropoff" maxlength="80" placeholder="病院" /></label>
+        <label>ご要望・備考<textarea name="memo" rows="2" placeholder="その他ご要望があればご記入ください"></textarea></label>
+
+        <h4>サービス選択（必須項目）</h4>
+        <label>移動方法 *<select name="mobility" id="mobility" required></select></label>
+        <label>介助内容 *<select name="menu" id="menu" required></select></label>
+
+        <p class="muted">最初に移動方法をお選びください</p>
+        <label>階段介助 *
+          <select name="stairAssist" id="stairAssist">
+            <option value="none">不要(0円)</option>
+            <option value="watch">見守り介助(+500円)</option>
+            <option value="stairs">階段移動(+1500円)</option>
+          </select>
+        </label>
+        <p class="error">警告: 階段介助ご利用の場合、身体介助がセットになります</p>
+
+        <label>機材レンタル *
+          <select name="rental">
+            <option value="none">不要</option>
+            <option value="wheel">車いす</option>
+            <option value="stretcher">ストレッチャー</option>
+          </select>
+        </label>
+        <p class="error">警告: 車いす固定による傷、すり傷などは保証対象外になります</p>
+        <p class="error">警告: ストレッチャー利用時に2名体制介助料5,000円と身体介助が必須となります</p>
+
+        <label>往復送迎 *
+          <select name="roundTrip" id="roundTrip">
+            <option value="none">不要(0円)</option>
+            <option value="wait">待機(+1000円)</option>
+            <option value="support">病院付き添い(+2000円)</option>
+          </select>
+        </label>
+
+        <label class="checkbox-item"><input id="stretcher" name="stretcher" type="checkbox" /> ストレッチャー利用</label>
+
+        <fieldset>
+          <legend>機材レンタル・オプション</legend>
+          <div id="optionList" class="checkbox-grid"></div>
+        </fieldset>
+
+        <div class="price-box">
+          <p>運賃(初乗り): ¥<span id="fareBase">730</span></p>
+          <p>配車予約: ¥<span id="dispatchFee">500</span></p>
+          <p>特殊車両使用料: ¥<span id="vehicleFee">1000</span></p>
+          <p class="total">概算合計: ¥<span id="totalPrice">0</span></p>
+          <p class="muted" id="priceDetail">上記料金に加え、距離運賃(2km以上200mごと/90円)と低速時の時間制運賃(1分30秒毎/90円)が加算されます。</p>
+        </div>
+
+        <p id="formError" class="error"></p>
+        <div class="modal-actions">
+          <button type="button" id="cancelBtn" class="secondary">キャンセル</button>
+          <button type="submit" id="submitBtn">予約する</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="adminEntryModal" class="modal">
+      <form id="adminEntryForm" method="dialog">
+        <h3>管理者ログイン</h3>
+        <label>パスワード<input id="adminEntryPassword" type="password" required /></label>
+        <p id="adminEntryError" class="error"></p>
+        <div class="modal-actions">
+          <button type="button" id="adminEntryCancel" class="secondary">閉じる</button>
+          <button type="submit">ログイン</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>
