@@ -13,44 +13,57 @@
     <div class="app-shell">
       <header class="topbar">
         <h1>介護タクシー予約</h1>
+        <p class="subtitle">丁寧・安全な送迎をご提供します</p>
         <p id="ruleSummary">読み込み中...</p>
       </header>
 
       <main class="page-grid">
         <section class="card">
-          <h2>予約カレンダー（1週間）</h2>
+          <button class="secondary full" type="button">他時間予約</button>
+          <p class="muted center">◎ 予約可能 ／ × 予約不可</p>
+          <p class="muted center">上下・左右にスクロールして、他の日付や時間を確認できます。</p>
           <div id="dateNav" class="date-nav"></div>
-          <div id="calendarGrid" class="calendar-grid"></div>
+          <div class="calendar-wrap">
+            <div id="calendarGrid" class="calendar-grid"></div>
+          </div>
         </section>
 
         <section class="card hidden" id="doneCard">
-          <h2>予約完了</h2>
+          <h2>ご予約ありがとうございます</h2>
           <p id="doneMessage" class="item"></p>
         </section>
 
         <section class="card">
-          <p class="muted center">◎は予約可能、×は予約不可です。空いている時間を押してください。</p>
+          <p class="muted center">空き枠（◎）を押すだけで入力画面が開きます。</p>
         </section>
       </main>
     </div>
 
     <dialog id="bookingModal" class="modal">
       <form id="bookingForm" method="dialog">
-        <h3>予約内容入力</h3>
+        <h3>ご予約</h3>
         <p id="selectedSlot" class="muted"></p>
-        <label>お名前<input name="name" required maxlength="40" /></label>
-        <label>連絡先（電話）<input name="phone" required inputmode="tel" placeholder="09012345678" /></label>
-        <label>移動方法<select name="mobility" id="mobility"></select></label>
-        <label>メニュー<select name="menu" id="menu"></select></label>
-        <label class="checkbox-item"><input id="stretcher" name="stretcher" type="checkbox" /> ストレッチャーを使用する</label>
+
+        <label>お名前(カタカナ) *<input name="name" required maxlength="40" /></label>
+        <label>連絡先(電話番号) *<input name="phone" required inputmode="tel" placeholder="09012345678" /></label>
+        <label>お伺い場所または施設名 *<input name="pickup" required maxlength="80" /></label>
+        <label>送迎先住所または施設名<input name="dropoff" maxlength="80" /></label>
+        <label>ご要望・備考<textarea name="memo" rows="2"></textarea></label>
+
+        <label>移動方法 *<select name="mobility" id="mobility"></select></label>
+        <label>介助内容（メニュー） *<select name="menu" id="menu"></select></label>
+        <label class="checkbox-item"><input id="stretcher" name="stretcher" type="checkbox" /> ストレッチャー利用</label>
+
         <fieldset>
-          <legend>オプション</legend>
+          <legend>機材レンタル・オプション</legend>
           <div id="optionList" class="checkbox-grid"></div>
         </fieldset>
+
         <div class="price-box">
-          <p>料金内訳: <span id="priceDetail">-</span></p>
-          <p class="total">合計: ¥<span id="totalPrice">0</span></p>
+          <p>概算合計: ¥<span id="totalPrice">0</span></p>
+          <p class="muted" id="priceDetail">-</p>
         </div>
+
         <p id="formError" class="error"></p>
         <div class="modal-actions">
           <button type="button" id="cancelBtn" class="secondary">キャンセル</button>
@@ -61,7 +74,7 @@
 
     <dialog id="adminEntryModal" class="modal">
       <form id="adminEntryForm" method="dialog">
-        <h3>管理ログイン</h3>
+        <h3>管理者ログイン</h3>
         <label>パスワード<input id="adminEntryPassword" type="password" required /></label>
         <p id="adminEntryError" class="error"></p>
         <div class="modal-actions">
