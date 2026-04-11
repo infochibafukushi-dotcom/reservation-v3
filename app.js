@@ -224,7 +224,9 @@
     const dispatchFee = document.getElementById('dispatchFee');
     const vehicleFee = document.getElementById('vehicleFee');
 
-    selectedSlot.textContent = `${state.selectedDateKey} ${state.selectedTime}`;
+    const d = new Date(state.selectedDateKey + "T00:00:00");
+    const w = ["日","月","火","水","木","金","土"][d.getDay()];
+    selectedSlot.textContent = `${d.getMonth()+1}/${d.getDate()}(${w}) ${state.selectedTime} から`;
     menu.innerHTML = state.settings.menus.map((m) => `<option value="${m.id}">${m.name} / ¥${m.price}</option>`).join('');
     mobility.innerHTML = state.settings.mobilityMethods.map((m) => `<option value="${m.id}">${m.name}${m.price ? ` / ¥${m.price}` : ''}</option>`).join('');
     optionList.innerHTML = state.settings.options.filter((o) => o.visible !== false).map((o) => `<label class="checkbox-item"><input type="checkbox" name="options" value="${o.id}"/>${o.name} (+¥${o.price})</label>`).join('');
@@ -274,7 +276,7 @@
       });
       setReservations(current);
       modal.close('ok');
-      hooks.onBooked(`<strong>予約ID:</strong> ${current[current.length-1].id}<br><strong>内容:</strong> ${state.selectedDateKey} ${state.selectedTime} / ${name}<br>内容確認のため、以下の番号[090-6331-4289]よりお電話をさせていただきます。<br>確認が取れたら、正式な予約完了と致します。`);
+      hooks.onBooked(`<strong>予約ID:</strong> ${current[current.length-1].id}<br><strong>日時:</strong> ${state.selectedDateKey} ${state.selectedTime} から<br><strong>お名前:</strong> ${name}<br>内容確認のため、以下の番号[090-6331-4289]よりお電話をさせていただきます。<br>確認が取れたら、正式な予約完了と致します。`);
     };
 
     modal.showModal();
