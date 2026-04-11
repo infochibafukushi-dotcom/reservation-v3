@@ -1,6 +1,39 @@
 (function(global){
   const DB_VERSION = 1;
   const SETTINGS_KEY = 'chiba_care_taxi_github_backend_v1';
+  const DEFAULT_MENU_GROUP_CATALOG = [
+    { key: 'price', label: '料金概算（基本料金）' },
+    { key: 'assistance', label: '介助内容' },
+    { key: 'stair', label: '階段介助' },
+    { key: 'equipment', label: '機材レンタル' },
+    { key: 'round_trip', label: '往復送迎' },
+    { key: 'move_type', label: '移動方法' },
+    { key: 'custom', label: 'その他（表示先なし）' },
+    { key: 'auto_set', label: '自動セット' }
+  ];
+  const DEFAULT_MENU_MASTER = [
+    { key: 'BASE_FARE', label: '運賃(初乗り)', price: 730, note: '「から」表記', is_visible: true, sort_order: 10, menu_group: 'price' },
+    { key: 'DISPATCH', label: '配車予約', price: 800, note: '', is_visible: true, sort_order: 20, menu_group: 'price' },
+    { key: 'SPECIAL_VEHICLE', label: '特殊車両使用料', price: 1000, note: '', is_visible: true, sort_order: 30, menu_group: 'price' },
+    { key: 'BOARDING_ASSIST', label: '乗降介助', price: 1400, note: '玄関から車両への車いす等固定まで', is_visible: true, sort_order: 100, menu_group: 'assistance' },
+    { key: 'BODY_ASSIST', label: '身体介助', price: 3000, note: 'お部屋から車両への車いす等固定まで', is_visible: true, sort_order: 110, menu_group: 'assistance' },
+    { key: 'STAIR_NONE', label: '不要', price: 0, note: '', is_visible: true, sort_order: 200, menu_group: 'stair' },
+    { key: 'STAIR_WATCH', label: '見守り介助', price: 0, note: '自力歩行可能で手を握る介助', is_visible: true, sort_order: 210, menu_group: 'stair' },
+    { key: 'STAIR_2F', label: '2階移動', price: 6000, note: '', is_visible: true, sort_order: 220, menu_group: 'stair', auto_apply_group: 'assistance', auto_apply_key: 'BODY_ASSIST' },
+    { key: 'STAIR_3F', label: '3階移動', price: 9000, note: '', is_visible: true, sort_order: 230, menu_group: 'stair', auto_apply_group: 'assistance', auto_apply_key: 'BODY_ASSIST' },
+    { key: 'EQUIP_WHEELCHAIR', label: '車いすレンタル', price: 0, note: '', is_visible: true, sort_order: 300, menu_group: 'equipment' },
+    { key: 'EQUIP_RECLINING', label: 'リクライニング車いすレンタル', price: 2500, note: '', is_visible: true, sort_order: 310, menu_group: 'equipment' },
+    { key: 'EQUIP_STRETCHER', label: 'ストレッチャーレンタル', price: 5000, note: '', is_visible: true, sort_order: 320, menu_group: 'equipment', auto_apply_group: 'assistance', auto_apply_key: 'BODY_ASSIST', auto_apply_group_2: 'equipment', auto_apply_key_2: 'EQUIP_STRETCHER_STAFF2' },
+    { key: 'EQUIP_OWN_WHEELCHAIR', label: 'ご自身車いす', price: 0, note: '', is_visible: true, sort_order: 330, menu_group: 'equipment' },
+    { key: 'EQUIP_STRETCHER_STAFF2', label: 'ストレッチャー2名体制介助料', price: 5000, note: '', is_visible: true, sort_order: 340, menu_group: 'auto_set' },
+    { key: 'ROUND_NONE', label: '不要', price: 0, note: '', is_visible: true, sort_order: 400, menu_group: 'round_trip' },
+    { key: 'ROUND_STANDBY', label: '待機', price: 800, note: '「から/30分毎」', is_visible: true, sort_order: 410, menu_group: 'round_trip' },
+    { key: 'ROUND_HOSPITAL', label: '病院付き添い', price: 1600, note: '「から/30分毎」', is_visible: true, sort_order: 420, menu_group: 'round_trip' },
+    { key: 'MOVE_WHEELCHAIR', label: '無料車いす', price: 0, note: '', is_visible: true, sort_order: 500, menu_group: 'move_type' },
+    { key: 'MOVE_RECLINING', label: 'リクライニング車いす', price: 0, note: '', is_visible: true, sort_order: 510, menu_group: 'move_type' },
+    { key: 'MOVE_STRETCHER', label: 'ストレッチャー', price: 0, note: '', is_visible: true, sort_order: 520, menu_group: 'move_type' },
+    { key: 'MOVE_OWN', label: 'ご自身の車いす', price: 0, note: '', is_visible: true, sort_order: 530, menu_group: 'move_type' }
+  ];
 
   function nowIso(){ return new Date().toISOString(); }
   function ymdLocal(date){
@@ -123,15 +156,33 @@
 
   function normalizeDb(db){
     const src = db && typeof db === 'object' ? db : {};
+    const menuMaster = Array.isArray(src.menu_master) && src.menu_master.length ? src.menu_master : DEFAULT_MENU_MASTER;
+    const menuGroupCatalog = Array.isArray(src.menu_group_catalog) && src.menu_group_catalog.length ? src.menu_group_catalog : DEFAULT_MENU_GROUP_CATALOG;
+    const menuKeyCatalog = Array.isArray(src.menu_key_catalog) && src.menu_key_catalog.length
+      ? src.menu_key_catalog
+      : menuMaster.map(item => ({
+        key: item.key,
+        key_jp: item.label,
+        menu_group: item.menu_group,
+        default_label: item.label,
+        default_price: Number(item.price || 0),
+        required_flag: false,
+        auto_apply_group: item.auto_apply_group || '',
+        auto_apply_key: item.auto_apply_key || '',
+        auto_apply_group_2: item.auto_apply_group_2 || '',
+        auto_apply_key_2: item.auto_apply_key_2 || ''
+      }));
     return {
       version: DB_VERSION,
       updated_at: nowIso(),
-      config: src.config && typeof src.config === 'object' ? src.config : {},
+      config: src.config && typeof src.config === 'object'
+        ? src.config
+        : { admin_password: '95123', same_day_enabled: '0', same_day_min_hours: '3', logo_use_github_image: '1' },
       reservations: Array.isArray(src.reservations) ? src.reservations : [],
       blocks: Array.isArray(src.blocks) ? src.blocks : [],
-      menu_master: Array.isArray(src.menu_master) ? src.menu_master : [],
-      menu_key_catalog: Array.isArray(src.menu_key_catalog) ? src.menu_key_catalog : [],
-      menu_group_catalog: Array.isArray(src.menu_group_catalog) ? src.menu_group_catalog : [],
+      menu_master: menuMaster,
+      menu_key_catalog: menuKeyCatalog,
+      menu_group_catalog: menuGroupCatalog,
       auto_rule_catalog: Array.isArray(src.auto_rule_catalog) ? src.auto_rule_catalog : []
     };
   }
@@ -214,14 +265,16 @@
       const range = args[0] || {};
       const start = String(range.start || '');
       const end = String(range.end || '');
-      return resp({ blockedSlotKeys: calcBlockedSlotKeys(db, start, end) });
+      const slotKeys = calcBlockedSlotKeys(db, start, end);
+      return resp({ start, end, slot_keys: slotKeys, keys: slotKeys, config: { ...db.config } });
     }
 
     if (func === 'api_getBlockedSlotKeys') {
       const range = args[0] || {};
       const start = String(range.start || '');
       const end = String(range.end || '');
-      return resp({ blockedSlotKeys: calcBlockedSlotKeys(db, start, end) });
+      const slotKeys = calcBlockedSlotKeys(db, start, end);
+      return resp({ slot_keys: slotKeys, keys: slotKeys, start, end });
     }
 
     if (func === 'api_getReservationsRange') {
@@ -278,8 +331,12 @@
 
     if (func === 'api_changeAdminPassword') {
       const payload = args[0] || {};
-      if (!payload.next_password) throw new Error('next_password が必要です');
-      db.config = { ...(db.config || {}), admin_password: String(payload.next_password) };
+      const current = String(payload.current_password || '');
+      const nextPw = String(payload.new_password || payload.next_password || '');
+      const saved = String((db.config && db.config.admin_password) || '95123');
+      if (current !== saved) throw new Error('現在のパスワードが一致しません');
+      if (!nextPw) throw new Error('new_password が必要です');
+      db.config = { ...(db.config || {}), admin_password: nextPw };
       await saveDb(settings, db, sha, 'admin password update');
       return resp({ saved: true });
     }
@@ -309,14 +366,25 @@
 
     if (func === 'api_toggleBlock') {
       const p = args[0] || {};
-      upsertBlock(String(p.date || ''), Number(p.hour), Number(p.minute || 0), !!p.isBlocked, p.reason);
+      const ymd = String(p.dateStr || p.date || '');
+      const hour = Number(p.hour);
+      const minute = Number(p.minute || 0);
+      const key = `${ymd}-${hour}-${minute}`;
+      const before = (db.blocks || []).find(b => {
+        const d = toYmd(b.block_date || b.date || b.slot_date);
+        const h = Number(b.block_hour ?? b.hour ?? b.slot_hour);
+        const m = Number(b.block_minute ?? b.minute ?? b.slot_minute ?? 0);
+        return `${d}-${h}-${m}` === key;
+      });
+      const nextBlocked = p.isBlocked === undefined ? !(before && (before.is_blocked === true || String(before.is_blocked || '').toUpperCase() !== 'FALSE')) : !!p.isBlocked;
+      upsertBlock(ymd, hour, minute, nextBlocked, p.reason);
       await saveDb(settings, db, sha, 'toggle block');
-      return resp({ saved: true });
+      return resp({ saved: true, is_blocked: nextBlocked });
     }
 
     if (func === 'api_setRegularDayBlocked' || func === 'api_setOtherTimeDayBlocked') {
       const p = args[0] || {};
-      const ymd = String(p.date || '');
+      const ymd = String(p.dateStr || p.date || '');
       const isBlocked = !!p.isBlocked;
       const slots = [];
       if (func === 'api_setRegularDayBlocked') {
