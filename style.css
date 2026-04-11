@@ -59,3 +59,7 @@ button.secondary { background: #e5e7eb; color: #111827; }
 
 .secret-icon { position: fixed; top: 8px; left: 8px; width: 28px; height: 28px; border-radius: 50%; border: 1px solid #d1d5db; background: #fff; color: #6b7280; z-index: 30; opacity: .6; }
 .secret-icon:active { transform: scale(0.96); }
+
+.modal-head { display:flex; justify-content:space-between; align-items:center; }
+.icon-btn { background:transparent; color:#111; padding:4px 8px; font-size:18px; }
+h4 { margin: 6px 0 2px; font-size: 13px; }

@@ -220,6 +220,9 @@
     const totalPrice = document.getElementById('totalPrice');
     const priceDetail = document.getElementById('priceDetail');
     const formError = document.getElementById('formError');
+    const fareBase = document.getElementById('fareBase');
+    const dispatchFee = document.getElementById('dispatchFee');
+    const vehicleFee = document.getElementById('vehicleFee');
 
     selectedSlot.textContent = `${state.selectedDateKey} ${state.selectedTime}`;
     menu.innerHTML = state.settings.menus.map((m) => `<option value="${m.id}">${m.name} / ¥${m.price}</option>`).join('');
@@ -229,21 +232,35 @@
     const updateTotal = () => {
       const selectedOptions = [...form.querySelectorAll('input[name="options"]:checked')].map((n) => n.value);
       const calc = calculateTotal({ menuId: menu.value, mobilityId: mobility.value, selectedOptions, stretcher: stretcher.checked }, state.settings);
-      totalPrice.textContent = calc.total.toLocaleString('ja-JP');
-      priceDetail.textContent = calc.details;
-      return calc;
+      const stair = form.elements.stairAssist?.value;
+      const round = form.elements.roundTrip?.value;
+      const stairFee = stair === 'watch' ? 500 : stair === 'stairs' ? 1500 : 0;
+      const roundFee = round === 'wait' ? 1000 : round === 'support' ? 2000 : 0;
+      const base = 730;
+      const dispatch = 500;
+      const vehicle = 1000;
+      const total = base + dispatch + vehicle + stairFee + roundFee + calc.total;
+      fareBase.textContent = base.toLocaleString('ja-JP');
+      dispatchFee.textContent = dispatch.toLocaleString('ja-JP');
+      vehicleFee.textContent = vehicle.toLocaleString('ja-JP');
+      totalPrice.textContent = total.toLocaleString('ja-JP');
+      priceDetail.textContent = `${calc.details} / 階段:${stairFee} / 往復:${roundFee}`;
+      return { ...calc, total };
     };
 
     form.reset(); formError.textContent = ''; updateTotal();
     form.oninput = updateTotal;
     document.getElementById('cancelBtn').onclick = () => modal.close();
+    const closeX = document.getElementById('closeModalX');
+    if (closeX) closeX.onclick = () => modal.close();
 
     form.onsubmit = (e) => {
       e.preventDefault();
       const name = form.elements.name.value.trim();
       const phone = form.elements.phone.value.trim();
+      if (!form.elements.privacyAgree.checked) return (formError.textContent = 'プライバシーポリシーへの同意が必要です');
       if (!name) return (formError.textContent = '名前を入力してください');
-      if (!/^\d{10,11}$/.test(phone)) return (formError.textContent = '連絡先は10〜11桁の数字で入力してください');
+      if (!/^[0-9-]{10,13}$/.test(phone)) return (formError.textContent = '連絡先は電話番号形式で入力してください');
 
       const calc = updateTotal();
       const menuObj = state.settings.menus.find((m) => m.id === menu.value);
