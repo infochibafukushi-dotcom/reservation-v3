@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body data-page="public">
+    <button id="secretAdminIcon" class="secret-icon" aria-label="管理入口">⚙</button>
+
     <div class="app-shell">
       <header class="topbar">
         <h1>介護タクシー予約</h1>
@@ -43,15 +45,8 @@
 
         <label>お名前<input name="name" required maxlength="40" /></label>
         <label>連絡先（電話）<input name="phone" required inputmode="tel" placeholder="09012345678" /></label>
-
-        <label>移動方法
-          <select name="mobility" id="mobility"></select>
-        </label>
-
-        <label>メニュー
-          <select name="menu" id="menu"></select>
-        </label>
-
+        <label>移動方法<select name="mobility" id="mobility"></select></label>
+        <label>メニュー<select name="menu" id="menu"></select></label>
         <label class="checkbox-item"><input id="stretcher" name="stretcher" type="checkbox" /> ストレッチャーを使用する</label>
 
         <fieldset>
@@ -69,6 +64,18 @@
         <div class="modal-actions">
           <button type="button" id="cancelBtn" class="secondary">キャンセル</button>
           <button type="submit" id="submitBtn">予約する</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="adminEntryModal" class="modal">
+      <form id="adminEntryForm" method="dialog">
+        <h3>管理ログイン</h3>
+        <label>パスワード<input id="adminEntryPassword" type="password" required /></label>
+        <p id="adminEntryError" class="error"></p>
+        <div class="modal-actions">
+          <button type="button" id="adminEntryCancel" class="secondary">閉じる</button>
+          <button type="submit">ログイン</button>
         </div>
       </form>
     </dialog>

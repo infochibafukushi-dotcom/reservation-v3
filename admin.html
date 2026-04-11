@@ -10,27 +10,32 @@
     <div class="app-shell">
       <header class="topbar">
         <h1>管理画面</h1>
-        <p>簡易ログイン + 予約管理</p>
+        <p>予約管理 / カレンダー管理 / 設定管理</p>
       </header>
 
       <main class="page-grid">
-        <section class="card" id="loginCard">
-          <h2>管理ログイン</h2>
-          <label>パスワード<input id="adminPassword" type="password" /></label>
-          <button id="loginBtn">ログイン</button>
-          <p id="loginError" class="error"></p>
+        <section class="card" id="blockedCard">
+          <h2>アクセス拒否</h2>
+          <p class="error">未認証です。公開画面の隠し導線からログインしてください。</p>
+        </section>
+
+        <section class="card hidden" id="securityPanel">
+          <h2>セキュリティ</h2>
+          <div class="row-actions">
+            <button id="logoutBtn" class="secondary">ログアウト</button>
+          </div>
+          <label>パスワード変更（新しい値）<input id="newPassword" type="password" /></label>
+          <button id="changePasswordBtn">パスワード変更</button>
+          <p id="securityMsg" class="error"></p>
         </section>
 
         <section class="card hidden" id="adminPanel">
-          <h2>営業・締切設定</h2>
+          <h2>予約ルール設定</h2>
           <div class="grid-2">
             <label>開始時刻<input id="startHour" type="number" min="0" max="23" /></label>
             <label>終了時刻<input id="endHour" type="number" min="0" max="23" /></label>
             <label>スロット間隔（分）
-              <select id="interval">
-                <option value="30">30</option>
-                <option value="60">60</option>
-              </select>
+              <select id="interval"><option value="30">30</option><option value="60">60</option></select>
             </label>
             <label>締切（現在+時間）<input id="cutoffHours" type="number" min="0" max="24" /></label>
           </div>
@@ -39,13 +44,22 @@
         </section>
 
         <section class="card hidden" id="blockPanel">
-          <h2>手動ブロック設定（◎・×）</h2>
+          <h2>カレンダー管理（◎・×）</h2>
+          <div class="row-actions">
+            <input id="bulkDate" type="date" />
+            <button id="blockDayBtn" class="secondary">日単位ブロック</button>
+            <button id="unblockDayBtn" class="secondary">日単位解除</button>
+          </div>
+          <div class="row-actions">
+            <input id="partialDate" type="date" />
+            <input id="partialTime" type="time" />
+            <button id="blockTimeBtn" class="secondary">特定時間ブロック</button>
+          </div>
           <div id="adminCalendarGrid" class="calendar-grid"></div>
         </section>
 
         <section class="card hidden" id="catalogPanel">
           <h2>料金・メニュー・オプション管理</h2>
-          <p class="muted">JSON形式（配列）で編集して保存。例: [{"id":"normal","name":"通常送迎","price":2500}]</p>
           <label>メニューJSON<textarea id="menuJson" rows="4"></textarea></label>
           <label>オプションJSON<textarea id="optionJson" rows="4"></textarea></label>
           <label>移動方法JSON<textarea id="mobilityJson" rows="4"></textarea></label>
@@ -56,7 +70,12 @@
         </section>
 
         <section class="card hidden" id="reservationPanel">
-          <h2>予約一覧管理</h2>
+          <h2>予約管理</h2>
+          <div class="row-actions">
+            <input id="filterDate" type="date" />
+            <input id="searchText" placeholder="名前・電話検索" />
+            <button id="applyFilter" class="secondary">絞り込み</button>
+          </div>
           <div id="reservationList" class="list"></div>
         </section>
       </main>

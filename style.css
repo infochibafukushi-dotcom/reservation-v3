@@ -51,3 +51,17 @@ button.secondary { background: #e5e7eb; color: #111827; }
 .cell { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); min-height: 34px; display: grid; place-items: center; font-size: 12px; }
 .cell.head, .cell.time { background: #f9fafb; font-weight: 700; }
 .cell:nth-child(8n) { border-right: 0; }
+.secret-icon {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #6b7280;
+  z-index: 30;
+  opacity: 0.6;
+}
+.secret-icon:active { transform: scale(0.96); }

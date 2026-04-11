@@ -2,6 +2,7 @@
   const STORAGE = {
     settings: 'careTaxi.settings.v1',
     reservations: 'careTaxi.reservations.v1',
+    adminAuth: 'careTaxi.admin.auth.v1',
   };
 
   const defaultSettings = {
@@ -9,16 +10,17 @@
     sameDayAllowed: true,
     cutoffHours: 3,
     manualBlocks: [],
-    adminPassword: 'admin123',
+    adminPassword: '95123',
     menus: [
       { id: 'normal', name: '通常送迎（片道）', price: 2500 },
       { id: 'hospital', name: '通院付き添いプラン', price: 4800 },
       { id: 'shopping', name: '買い物付き添いプラン', price: 6500 },
     ],
     options: [
-      { id: 'stairs', name: '階段介助', price: 800 },
-      { id: 'night', name: '夜間対応', price: 1200 },
-      { id: 'extra', name: '追加付き添い', price: 1500 },
+      { id: 'stairs', name: '階段介助', price: 800, visible: true },
+      { id: 'night', name: '夜間対応', price: 1200, visible: true },
+      { id: 'extra', name: '追加付き添い', price: 1500, visible: true },
+      { id: 'assist2', name: '2名介助', price: 2000, visible: false },
     ],
     mobilityMethods: [
       { id: 'walk', name: '歩行', price: 0 },
@@ -26,94 +28,51 @@
     ],
     stretcher: { enabled: true, fee: 3000 },
     internalFee: 200,
-    autoOptions: [{ id: 'stairs', when: { mobility: 'wheelchair' } }],
+    autoOptions: [{ id: 'assist2', when: { stretcher: true } }],
   };
 
-  function load(key, fallback) {
-    try {
-      const v = localStorage.getItem(key);
-      return v ? JSON.parse(v) : fallback;
-    } catch {
-      return fallback;
-    }
-  }
+  const load = (key, fallback) => {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+  };
+  const save = (key, value) => localStorage.setItem(key, JSON.stringify(value));
 
-  function save(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
-  }
-
-  function getSettings() {
+  const getSettings = () => {
     const current = load(STORAGE.settings, null);
-    if (!current) {
-      save(STORAGE.settings, defaultSettings);
-      return structuredClone(defaultSettings);
-    }
+    if (!current) { save(STORAGE.settings, defaultSettings); return structuredClone(defaultSettings); }
     return { ...defaultSettings, ...current };
-  }
+  };
+  const setSettings = (s) => save(STORAGE.settings, s);
+  const getReservations = () => load(STORAGE.reservations, []);
+  const setReservations = (rows) => save(STORAGE.reservations, rows);
 
-  function setSettings(settings) {
-    save(STORAGE.settings, settings);
-  }
+  const setAdminAuthenticated = (ok) => save(STORAGE.adminAuth, { ok, at: Date.now() });
+  const isAdminAuthenticated = () => Boolean(load(STORAGE.adminAuth, {}).ok);
+  const clearAdminAuthenticated = () => localStorage.removeItem(STORAGE.adminAuth);
 
-  function getReservations() {
-    return load(STORAGE.reservations, []);
-  }
-
-  function setReservations(rows) {
-    save(STORAGE.reservations, rows);
-  }
-
-  function pad(n) {
-    return String(n).padStart(2, '0');
-  }
-
-  function toDateKey(date) {
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-  }
-
-  function formatJPDate(date) {
-    const days = ['日', '月', '火', '水', '木', '金', '土'];
-    return `${date.getMonth() + 1}/${date.getDate()}(${days[date.getDay()]})`;
-  }
-
-  function weekDates() {
-    const base = new Date();
-    return Array.from({ length: 7 }).map((_, i) => {
-      const d = new Date(base);
-      d.setDate(base.getDate() + i);
-      return d;
-    });
-  }
+  const pad = (n) => String(n).padStart(2, '0');
+  const toDateKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const formatJPDate = (d) => `${d.getMonth() + 1}/${d.getDate()}(${['日', '月', '火', '水', '木', '金', '土'][d.getDay()]})`;
+  const weekDates = () => Array.from({ length: 7 }).map((_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d; });
+  const slotKey = (dateKey, time) => `${dateKey} ${time}`;
 
   function slotTimes(settings) {
     const { start, end, interval } = settings.businessHours;
     const rows = [];
-    for (let h = start; h <= end; h++) {
-      rows.push(`${pad(h)}:00`);
-      if (interval === 30 && h !== end) rows.push(`${pad(h)}:30`);
-    }
+    for (let h = start; h <= end; h++) { rows.push(`${pad(h)}:00`); if (interval === 30 && h !== end) rows.push(`${pad(h)}:30`); }
     return rows;
   }
 
-  function slotKey(dateKey, time) {
-    return `${dateKey} ${time}`;
-  }
-
-  function isSameDay(dateKey) {
-    return dateKey === toDateKey(new Date());
-  }
-
-  function isPastCutoff(dateKey, time, settings) {
+  const isSameDay = (dateKey) => dateKey === toDateKey(new Date());
+  const isPastCutoff = (dateKey, time, settings) => {
     const now = new Date();
     const [y, m, d] = dateKey.split('-').map(Number);
     const [hh, mm] = time.split(':').map(Number);
-    const target = new Date(y, m - 1, d, hh, mm, 0);
-    return (target - now) / 1000 / 60 / 60 < settings.cutoffHours;
-  }
+    return (new Date(y, m - 1, d, hh, mm, 0) - now) / 36e5 < settings.cutoffHours;
+  };
 
   function statusOfSlot(dateKey, time, reservations, settings) {
     const key = slotKey(dateKey, time);
-    if (reservations.some((r) => r.slotKey === key)) return 'reserved';
+    if (reservations.some((r) => r.slotKey === key && r.status !== '無効')) return 'reserved';
     if (settings.manualBlocks.includes(key)) return 'blocked';
     if (!settings.sameDayAllowed && isSameDay(dateKey)) return 'blocked';
     if (isPastCutoff(dateKey, time, settings)) return 'blocked';
@@ -124,39 +83,56 @@
     const menu = settings.menus.find((m) => m.id === menuId);
     const mobility = settings.mobilityMethods.find((m) => m.id === mobilityId);
     const optSet = new Set(selectedOptions);
-
-    settings.autoOptions.forEach((rule) => {
-      if (rule.when?.mobility === mobilityId) optSet.add(rule.id);
-    });
+    settings.autoOptions.forEach((r) => { if (r.when?.stretcher && stretcher) optSet.add(r.id); });
 
     let total = (menu?.price || 0) + (mobility?.price || 0) + (settings.internalFee || 0);
     const details = [`メニュー:${menu?.price || 0}`, `移動:${mobility?.price || 0}`];
-
-    settings.options.forEach((o) => {
-      if (optSet.has(o.id)) {
-        total += Number(o.price || 0);
-        details.push(`${o.name}:${o.price}`);
-      }
-    });
-
-    if (stretcher && settings.stretcher?.enabled) {
-      total += Number(settings.stretcher.fee || 0);
-      details.push(`ストレッチャー:${settings.stretcher.fee || 0}`);
-    }
-
-    if (settings.internalFee) details.push(`内部加算:${settings.internalFee}`);
-
+    settings.options.forEach((o) => { if (optSet.has(o.id)) { total += Number(o.price || 0); details.push(`${o.name}:${o.price}`); } });
+    if (stretcher && settings.stretcher?.enabled) { total += Number(settings.stretcher.fee || 0); details.push(`ストレッチャー:${settings.stretcher.fee || 0}`); }
+    details.push(`内部加算:${settings.internalFee || 0}`);
     return { total, details: details.join(' / '), appliedOptions: [...optSet] };
   }
 
-  function initPublic() {
-    const state = {
-      settings: getSettings(),
-      reservations: getReservations(),
-      dates: weekDates(),
-      selectedDateKey: null,
-      selectedTime: null,
+  function bindHiddenAdminEntry() {
+    const icon = document.getElementById('secretAdminIcon');
+    const modal = document.getElementById('adminEntryModal');
+    if (!icon || !modal) return;
+
+    const form = document.getElementById('adminEntryForm');
+    const input = document.getElementById('adminEntryPassword');
+    const err = document.getElementById('adminEntryError');
+    document.getElementById('adminEntryCancel').onclick = () => modal.close();
+
+    let taps = [];
+    const windowMs = 2500;
+    icon.addEventListener('click', () => {
+      const now = Date.now();
+      taps = taps.filter((t) => now - t <= windowMs);
+      taps.push(now);
+      if (taps.length >= 5) {
+        taps = [];
+        err.textContent = '';
+        form.reset();
+        modal.showModal();
+      }
+    });
+
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      const settings = getSettings();
+      if (input.value === settings.adminPassword) {
+        setAdminAuthenticated(true);
+        location.href = 'admin.html';
+      } else {
+        err.textContent = 'パスワードが違います';
+      }
     };
+  }
+
+  function initPublic() {
+    bindHiddenAdminEntry();
+
+    const state = { settings: getSettings(), reservations: getReservations(), dates: weekDates(), selectedDateKey: null, selectedTime: null };
     state.selectedDateKey = toDateKey(state.dates[0]);
 
     const weekHeader = document.getElementById('weekHeader');
@@ -168,46 +144,36 @@
 
     ruleSummary.textContent = `当日予約:${state.settings.sameDayAllowed ? '可' : '不可'} / 現在+${state.settings.cutoffHours}時間締切`;
 
-    function renderDates() {
-      weekHeader.innerHTML = state.dates
-        .map((d) => {
-          const k = toDateKey(d);
-          return `<button class="date-tab ${state.selectedDateKey === k ? 'is-selected' : ''}" data-date="${k}" type="button">${formatJPDate(
-            d,
-          )}</button>`;
-        })
-        .join('');
-    }
+    const renderDates = () => {
+      weekHeader.innerHTML = state.dates.map((d) => {
+        const k = toDateKey(d);
+        return `<button class="date-tab ${state.selectedDateKey === k ? 'is-selected' : ''}" data-date="${k}" type="button">${formatJPDate(d)}</button>`;
+      }).join('');
+    };
 
-    function renderSlots() {
-      const times = slotTimes(state.settings);
-      slotList.innerHTML = times
-        .map((t) => {
-          const status = statusOfSlot(state.selectedDateKey, t, state.reservations, state.settings);
-          const text = status === 'open' ? '◎ 予約可' : '× 予約不可';
-          return `<button type="button" class="slot-btn ${status}" data-time="${t}" ${status !== 'open' ? 'disabled' : ''}>${t}<small>${text}</small></button>`;
-        })
-        .join('');
-    }
+    const renderSlots = () => {
+      slotList.innerHTML = slotTimes(state.settings).map((t) => {
+        const status = statusOfSlot(state.selectedDateKey, t, state.reservations, state.settings);
+        return `<button type="button" class="slot-btn ${status}" data-time="${t}" ${status !== 'open' ? 'disabled' : ''}>${t}<small>${status === 'open' ? '◎ 予約可' : '× 予約不可'}</small></button>`;
+      }).join('');
+    };
 
-    function renderToday() {
+    const renderToday = () => {
       const today = toDateKey(new Date());
-      const rows = state.reservations.filter((r) => r.dateKey === today);
-      todayList.innerHTML = rows.length
-        ? rows.map((r) => `<article class="item">${r.time} ${r.name} / ${r.menuName} / ¥${r.total}</article>`).join('')
-        : '<article class="item muted">本日の予約はありません</article>';
-    }
+      const rows = state.reservations.filter((r) => r.dateKey === today && r.status !== '無効');
+      todayList.innerHTML = rows.length ? rows.map((r) => `<article class="item">${r.time} ${r.name} / ${r.menuName} / ¥${r.total}</article>`).join('') : '<article class="item muted">本日の予約はありません</article>';
+    };
 
-    weekHeader.addEventListener('click', (e) => {
+    weekHeader.onclick = (e) => {
       const b = e.target.closest('button[data-date]');
       if (!b) return;
       state.selectedDateKey = b.dataset.date;
       state.selectedTime = null;
       renderDates();
       renderSlots();
-    });
+    };
 
-    slotList.addEventListener('click', (e) => {
+    slotList.onclick = (e) => {
       const b = e.target.closest('button[data-time]');
       if (!b || b.disabled) return;
       state.selectedTime = b.dataset.time;
@@ -220,11 +186,9 @@
           renderToday();
         },
       });
-    });
+    };
 
-    renderDates();
-    renderSlots();
-    renderToday();
+    renderDates(); renderSlots(); renderToday();
   }
 
   function openBookingModal(state, hooks) {
@@ -241,38 +205,20 @@
 
     selectedSlot.textContent = `${state.selectedDateKey} ${state.selectedTime}`;
     menu.innerHTML = state.settings.menus.map((m) => `<option value="${m.id}">${m.name} / ¥${m.price}</option>`).join('');
-    mobility.innerHTML = state.settings.mobilityMethods
-      .map((m) => `<option value="${m.id}">${m.name}${m.price ? ` / ¥${m.price}` : ''}</option>`)
-      .join('');
-    optionList.innerHTML = state.settings.options
-      .map((o) => `<label class="checkbox-item"><input type="checkbox" name="options" value="${o.id}"/>${o.name} (+¥${o.price})</label>`)
-      .join('');
+    mobility.innerHTML = state.settings.mobilityMethods.map((m) => `<option value="${m.id}">${m.name}${m.price ? ` / ¥${m.price}` : ''}</option>`).join('');
+    optionList.innerHTML = state.settings.options.filter((o) => o.visible !== false).map((o) => `<label class="checkbox-item"><input type="checkbox" name="options" value="${o.id}"/>${o.name} (+¥${o.price})</label>`).join('');
 
-    function updateTotal() {
+    const updateTotal = () => {
       const selectedOptions = [...form.querySelectorAll('input[name="options"]:checked')].map((n) => n.value);
-      const calc = calculateTotal(
-        {
-          menuId: menu.value,
-          mobilityId: mobility.value,
-          selectedOptions,
-          stretcher: stretcher.checked,
-        },
-        state.settings,
-      );
+      const calc = calculateTotal({ menuId: menu.value, mobilityId: mobility.value, selectedOptions, stretcher: stretcher.checked }, state.settings);
       totalPrice.textContent = calc.total.toLocaleString('ja-JP');
       priceDetail.textContent = calc.details;
       return calc;
-    }
+    };
 
-    form.reset();
-    formError.textContent = '';
-    updateTotal();
-
-    const onInput = () => updateTotal();
-    const onCancel = () => modal.close();
-
-    form.addEventListener('input', onInput);
-    document.getElementById('cancelBtn').addEventListener('click', onCancel, { once: true });
+    form.reset(); formError.textContent = ''; updateTotal();
+    form.oninput = updateTotal;
+    document.getElementById('cancelBtn').onclick = () => modal.close();
 
     form.onsubmit = (e) => {
       e.preventDefault();
@@ -283,28 +229,17 @@
 
       const calc = updateTotal();
       const menuObj = state.settings.menus.find((m) => m.id === menu.value);
-      const record = {
-        id: crypto.randomUUID(),
-        name,
-        phone,
-        dateKey: state.selectedDateKey,
-        time: state.selectedTime,
-        slotKey: slotKey(state.selectedDateKey, state.selectedTime),
-        menuId: menu.value,
-        menuName: menuObj?.name || '',
-        mobilityId: mobility.value,
-        stretcher: stretcher.checked,
-        options: calc.appliedOptions,
-        total: calc.total,
-        status: '確定',
-        createdAt: new Date().toISOString(),
-      };
-
       const current = getReservations();
-      current.push(record);
+      current.push({
+        id: crypto.randomUUID(), name, phone,
+        dateKey: state.selectedDateKey, time: state.selectedTime, slotKey: slotKey(state.selectedDateKey, state.selectedTime),
+        menuId: menu.value, menuName: menuObj?.name || '', mobilityId: mobility.value,
+        stretcher: stretcher.checked, options: calc.appliedOptions, total: calc.total,
+        status: '確定', createdAt: new Date().toISOString(),
+      });
       setReservations(current);
       modal.close('ok');
-      hooks.onBooked(`予約が確定しました：${record.dateKey} ${record.time} / ${record.name} / ¥${record.total.toLocaleString('ja-JP')}`);
+      hooks.onBooked(`予約が確定しました：${state.selectedDateKey} ${state.selectedTime} / ${name} / ¥${calc.total.toLocaleString('ja-JP')}`);
     };
 
     modal.showModal();
@@ -312,15 +247,9 @@
 
   window.CareTaxi = {
     STORAGE,
-    getSettings,
-    setSettings,
-    getReservations,
-    setReservations,
-    weekDates,
-    slotTimes,
-    toDateKey,
-    formatJPDate,
-    statusOfSlot,
+    getSettings, setSettings, getReservations, setReservations,
+    setAdminAuthenticated, isAdminAuthenticated, clearAdminAuthenticated,
+    weekDates, slotTimes, toDateKey, formatJPDate, statusOfSlot,
   };
 
   if (document.body.dataset.page === 'public') initPublic();
