@@ -70,12 +70,21 @@
     return (new Date(y, m - 1, d, hh, mm, 0) - now) / 36e5 < settings.cutoffHours;
   };
 
+  function hoursUntil(dateKey, time) {
+    const now = new Date();
+    const [y, m, d] = dateKey.split('-').map(Number);
+    const [hh, mm] = time.split(':').map(Number);
+    return (new Date(y, m - 1, d, hh, mm, 0) - now) / 36e5;
+  }
+
   function statusOfSlot(dateKey, time, reservations, settings) {
     const key = slotKey(dateKey, time);
     if (reservations.some((r) => r.slotKey === key && r.status !== '無効')) return 'reserved';
     if (settings.manualBlocks.includes(key)) return 'blocked';
     if (!settings.sameDayAllowed && isSameDay(dateKey)) return 'blocked';
-    if (isPastCutoff(dateKey, time, settings)) return 'blocked';
+    const left = hoursUntil(dateKey, time);
+    if (left < settings.cutoffHours) return 'blocked';
+    if (left < settings.cutoffHours + 1) return 'limited';
     return 'open';
   }
 
@@ -133,10 +142,9 @@
     bindHiddenAdminEntry();
 
     const state = { settings: getSettings(), reservations: getReservations(), dates: weekDates(), selectedDateKey: null, selectedTime: null };
-    state.selectedDateKey = toDateKey(state.dates[0]);
+    const times = slotTimes(state.settings);
 
-    const weekHeader = document.getElementById('weekHeader');
-    const slotList = document.getElementById('slotList');
+    const calendarGrid = document.getElementById('calendarGrid');
     const ruleSummary = document.getElementById('ruleSummary');
     const todayList = document.getElementById('todayList');
     const doneCard = document.getElementById('doneCard');
@@ -144,51 +152,61 @@
 
     ruleSummary.textContent = `当日予約:${state.settings.sameDayAllowed ? '可' : '不可'} / 現在+${state.settings.cutoffHours}時間締切`;
 
-    const renderDates = () => {
-      weekHeader.innerHTML = state.dates.map((d) => {
-        const k = toDateKey(d);
-        return `<button class="date-tab ${state.selectedDateKey === k ? 'is-selected' : ''}" data-date="${k}" type="button">${formatJPDate(d)}</button>`;
-      }).join('');
-    };
+    function renderCalendarStructure() {
+      const head = ['<div class="cell head"></div>']
+        .concat(state.dates.map((d) => `<div class="cell head">${formatJPDate(d)}</div>`))
+        .join('');
+      const body = times
+        .map((t) => {
+          const cols = state.dates
+            .map((d) => {
+              const dateKey = toDateKey(d);
+              return `<div class="cell"><button type="button" class="slot-btn" data-date="${dateKey}" data-time="${t}">-</button></div>`;
+            })
+            .join('');
+          return `<div class="cell time">${t}</div>${cols}`;
+        })
+        .join('');
+      calendarGrid.innerHTML = head + body;
+    }
 
-    const renderSlots = () => {
-      slotList.innerHTML = slotTimes(state.settings).map((t) => {
-        const status = statusOfSlot(state.selectedDateKey, t, state.reservations, state.settings);
-        return `<button type="button" class="slot-btn ${status}" data-time="${t}" ${status !== 'open' ? 'disabled' : ''}>${t}<small>${status === 'open' ? '◎ 予約可' : '× 予約不可'}</small></button>`;
-      }).join('');
-    };
+    function patchSlotStates() {
+      calendarGrid.querySelectorAll('button[data-date][data-time]').forEach((btn) => {
+        const dateKey = btn.dataset.date;
+        const time = btn.dataset.time;
+        const status = statusOfSlot(dateKey, time, state.reservations, state.settings);
+        btn.className = `slot-btn ${status}` + (state.selectedDateKey === dateKey && state.selectedTime === time ? ' is-selected' : '');
+        btn.disabled = status === 'blocked' || status === 'reserved';
+        btn.innerHTML = status === 'open' ? '◎' : status === 'limited' ? '△' : '×';
+      });
+    }
 
-    const renderToday = () => {
+    function renderToday() {
       const today = toDateKey(new Date());
       const rows = state.reservations.filter((r) => r.dateKey === today && r.status !== '無効');
       todayList.innerHTML = rows.length ? rows.map((r) => `<article class="item">${r.time} ${r.name} / ${r.menuName} / ¥${r.total}</article>`).join('') : '<article class="item muted">本日の予約はありません</article>';
-    };
+    }
 
-    weekHeader.onclick = (e) => {
-      const b = e.target.closest('button[data-date]');
-      if (!b) return;
-      state.selectedDateKey = b.dataset.date;
-      state.selectedTime = null;
-      renderDates();
-      renderSlots();
-    };
-
-    slotList.onclick = (e) => {
-      const b = e.target.closest('button[data-time]');
+    calendarGrid.onclick = (e) => {
+      const b = e.target.closest('button[data-date][data-time]');
       if (!b || b.disabled) return;
+      state.selectedDateKey = b.dataset.date;
       state.selectedTime = b.dataset.time;
+      patchSlotStates();
       openBookingModal(state, {
         onBooked: (message) => {
           doneCard.classList.remove('hidden');
           doneMessage.textContent = message;
           state.reservations = getReservations();
-          renderSlots();
+          patchSlotStates();
           renderToday();
         },
       });
     };
 
-    renderDates(); renderSlots(); renderToday();
+    renderCalendarStructure();
+    patchSlotStates();
+    renderToday();
   }
 
   function openBookingModal(state, hooks) {
