@@ -29,8 +29,6 @@
     autoOptions: [{ id: 'stairs', when: { mobility: 'wheelchair' } }],
   };
 
-  const defaultReservations = [];
-
   function load(key, fallback) {
     try {
       const v = localStorage.getItem(key);
@@ -53,16 +51,16 @@
     return { ...defaultSettings, ...current };
   }
 
+  function setSettings(settings) {
+    save(STORAGE.settings, settings);
+  }
+
   function getReservations() {
-    return load(STORAGE.reservations, defaultReservations);
+    return load(STORAGE.reservations, []);
   }
 
   function setReservations(rows) {
     save(STORAGE.reservations, rows);
-  }
-
-  function setSettings(settings) {
-    save(STORAGE.settings, settings);
   }
 
   function pad(n) {
@@ -79,26 +77,20 @@
   }
 
   function weekDates() {
-    const arr = [];
-    const now = new Date();
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(now);
-      d.setDate(now.getDate() + i);
-      arr.push(d);
-    }
-    return arr;
+    const base = new Date();
+    return Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(base);
+      d.setDate(base.getDate() + i);
+      return d;
+    });
   }
 
   function slotTimes(settings) {
     const { start, end, interval } = settings.businessHours;
     const rows = [];
     for (let h = start; h <= end; h++) {
-      if (interval === 60) {
-        rows.push(`${pad(h)}:00`);
-      } else {
-        rows.push(`${pad(h)}:00`);
-        if (h !== end) rows.push(`${pad(h)}:30`);
-      }
+      rows.push(`${pad(h)}:00`);
+      if (interval === 30 && h !== end) rows.push(`${pad(h)}:30`);
     }
     return rows;
   }
@@ -107,44 +99,16 @@
     return `${dateKey} ${time}`;
   }
 
+  function isSameDay(dateKey) {
+    return dateKey === toDateKey(new Date());
+  }
+
   function isPastCutoff(dateKey, time, settings) {
     const now = new Date();
     const [y, m, d] = dateKey.split('-').map(Number);
     const [hh, mm] = time.split(':').map(Number);
     const target = new Date(y, m - 1, d, hh, mm, 0);
-    const diffHours = (target.getTime() - now.getTime()) / 1000 / 60 / 60;
-    return diffHours < settings.cutoffHours;
-  }
-
-  function isSameDay(dateKey) {
-    return dateKey === toDateKey(new Date());
-  }
-
-  function calculateTotal({ menuId, mobilityId, selectedOptions, stretcher }, settings) {
-    const menu = settings.menus.find((m) => m.id === menuId);
-    const mobility = settings.mobilityMethods.find((m) => m.id === mobilityId);
-    const optionSet = new Set(selectedOptions);
-
-    settings.autoOptions.forEach((rule) => {
-      if (rule.when?.mobility === mobilityId) optionSet.add(rule.id);
-    });
-
-    let total = (menu?.price || 0) + (mobility?.price || 0) + (settings.internalFee || 0);
-    const details = [`メニュー:${menu?.price || 0}`, `移動:${mobility?.price || 0}`, `内部:${settings.internalFee || 0}`];
-
-    settings.options.forEach((opt) => {
-      if (optionSet.has(opt.id)) {
-        total += Number(opt.price || 0);
-        details.push(`${opt.name}:${opt.price}`);
-      }
-    });
-
-    if (stretcher === 'yes' && settings.stretcher?.enabled) {
-      total += Number(settings.stretcher.fee || 0);
-      details.push(`ストレッチャー:${settings.stretcher.fee || 0}`);
-    }
-
-    return { total, details: details.join(' / '), appliedOptions: [...optionSet] };
+    return (target - now) / 1000 / 60 / 60 < settings.cutoffHours;
   }
 
   function statusOfSlot(dateKey, time, reservations, settings) {
@@ -156,94 +120,133 @@
     return 'open';
   }
 
-  function initPublic() {
-    const settings = getSettings();
-    const reservations = getReservations();
-    const dates = weekDates();
-    const times = slotTimes(settings);
+  function calculateTotal({ menuId, mobilityId, selectedOptions, stretcher }, settings) {
+    const menu = settings.menus.find((m) => m.id === menuId);
+    const mobility = settings.mobilityMethods.find((m) => m.id === mobilityId);
+    const optSet = new Set(selectedOptions);
 
-    const weekHeader = document.getElementById('weekHeader');
-    const calendarGrid = document.getElementById('calendarGrid');
-    const ruleSummary = document.getElementById('ruleSummary');
-    const todayList = document.getElementById('todayList');
-    const recentList = document.getElementById('recentList');
+    settings.autoOptions.forEach((rule) => {
+      if (rule.when?.mobility === mobilityId) optSet.add(rule.id);
+    });
 
-    ruleSummary.textContent = `締切: 現在+${settings.cutoffHours}時間 / 当日予約: ${settings.sameDayAllowed ? '可' : '不可'}`;
+    let total = (menu?.price || 0) + (mobility?.price || 0) + (settings.internalFee || 0);
+    const details = [`メニュー:${menu?.price || 0}`, `移動:${mobility?.price || 0}`];
 
-    weekHeader.innerHTML = dates
-      .map((d, i) => `<div class="date-tab ${i === 0 ? 'is-today' : ''}">${formatJPDate(d)}</div>`)
-      .join('');
+    settings.options.forEach((o) => {
+      if (optSet.has(o.id)) {
+        total += Number(o.price || 0);
+        details.push(`${o.name}:${o.price}`);
+      }
+    });
 
-    const head = ['<div class="cell head"></div>']
-      .concat(dates.map((d) => `<div class="cell head">${d.getDate()}日</div>`))
-      .join('');
+    if (stretcher && settings.stretcher?.enabled) {
+      total += Number(settings.stretcher.fee || 0);
+      details.push(`ストレッチャー:${settings.stretcher.fee || 0}`);
+    }
 
-    const rows = times
-      .map((t) => {
-        const line = dates
-          .map((d) => {
-            const dateKey = toDateKey(d);
-            const s = statusOfSlot(dateKey, t, reservations, settings);
-            const mark = s === 'open' ? '◎' : '×';
-            return `<div class="cell"><button class="slot-btn ${s} ${isSameDay(dateKey) ? 'today' : ''}" data-date="${dateKey}" data-time="${t}" ${
-              s !== 'open' ? 'disabled' : ''
-            }>${mark}</button></div>`;
-          })
-          .join('');
-        return `<div class="cell time">${t}</div>${line}`;
-      })
-      .join('');
+    if (settings.internalFee) details.push(`内部加算:${settings.internalFee}`);
 
-    calendarGrid.innerHTML = head + rows;
-
-    const todayKey = toDateKey(new Date());
-    const todays = reservations.filter((r) => r.dateKey === todayKey);
-    todayList.innerHTML = todays.length
-      ? todays
-          .map(
-            (r) => `<article class="item">${r.time} ${r.name} / ${r.menuName}<br><span class="muted">${r.phone} / ${r.status}</span></article>`,
-          )
-          .join('')
-      : '<article class="item muted">本日の予約はありません</article>';
-
-    recentList.innerHTML = reservations.length
-      ? reservations
-          .slice(-5)
-          .reverse()
-          .map((r) => `<article class="item">${r.dateKey} ${r.time} / ${r.name} / 合計¥${r.total}</article>`)
-          .join('')
-      : '<article class="item muted">予約データなし</article>';
-
-    bindBookingModal(settings, reservations);
+    return { total, details: details.join(' / '), appliedOptions: [...optSet] };
   }
 
-  function bindBookingModal(settings, reservations) {
+  function initPublic() {
+    const state = {
+      settings: getSettings(),
+      reservations: getReservations(),
+      dates: weekDates(),
+      selectedDateKey: null,
+      selectedTime: null,
+    };
+    state.selectedDateKey = toDateKey(state.dates[0]);
+
+    const weekHeader = document.getElementById('weekHeader');
+    const slotList = document.getElementById('slotList');
+    const ruleSummary = document.getElementById('ruleSummary');
+    const todayList = document.getElementById('todayList');
+    const doneCard = document.getElementById('doneCard');
+    const doneMessage = document.getElementById('doneMessage');
+
+    ruleSummary.textContent = `当日予約:${state.settings.sameDayAllowed ? '可' : '不可'} / 現在+${state.settings.cutoffHours}時間締切`;
+
+    function renderDates() {
+      weekHeader.innerHTML = state.dates
+        .map((d) => {
+          const k = toDateKey(d);
+          return `<button class="date-tab ${state.selectedDateKey === k ? 'is-selected' : ''}" data-date="${k}" type="button">${formatJPDate(
+            d,
+          )}</button>`;
+        })
+        .join('');
+    }
+
+    function renderSlots() {
+      const times = slotTimes(state.settings);
+      slotList.innerHTML = times
+        .map((t) => {
+          const status = statusOfSlot(state.selectedDateKey, t, state.reservations, state.settings);
+          const text = status === 'open' ? '◎ 予約可' : '× 予約不可';
+          return `<button type="button" class="slot-btn ${status}" data-time="${t}" ${status !== 'open' ? 'disabled' : ''}>${t}<small>${text}</small></button>`;
+        })
+        .join('');
+    }
+
+    function renderToday() {
+      const today = toDateKey(new Date());
+      const rows = state.reservations.filter((r) => r.dateKey === today);
+      todayList.innerHTML = rows.length
+        ? rows.map((r) => `<article class="item">${r.time} ${r.name} / ${r.menuName} / ¥${r.total}</article>`).join('')
+        : '<article class="item muted">本日の予約はありません</article>';
+    }
+
+    weekHeader.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-date]');
+      if (!b) return;
+      state.selectedDateKey = b.dataset.date;
+      state.selectedTime = null;
+      renderDates();
+      renderSlots();
+    });
+
+    slotList.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-time]');
+      if (!b || b.disabled) return;
+      state.selectedTime = b.dataset.time;
+      openBookingModal(state, {
+        onBooked: (message) => {
+          doneCard.classList.remove('hidden');
+          doneMessage.textContent = message;
+          state.reservations = getReservations();
+          renderSlots();
+          renderToday();
+        },
+      });
+    });
+
+    renderDates();
+    renderSlots();
+    renderToday();
+  }
+
+  function openBookingModal(state, hooks) {
     const modal = document.getElementById('bookingModal');
-    if (!modal) return;
     const form = document.getElementById('bookingForm');
     const selectedSlot = document.getElementById('selectedSlot');
     const menu = document.getElementById('menu');
     const mobility = document.getElementById('mobility');
-    const stretcher = document.getElementById('stretcher');
     const optionList = document.getElementById('optionList');
+    const stretcher = document.getElementById('stretcher');
     const totalPrice = document.getElementById('totalPrice');
     const priceDetail = document.getElementById('priceDetail');
     const formError = document.getElementById('formError');
-    const cancelBtn = document.getElementById('cancelBtn');
 
-    menu.innerHTML = settings.menus.map((m) => `<option value="${m.id}">${m.name} / ¥${m.price}</option>`).join('');
-    mobility.innerHTML = settings.mobilityMethods
+    selectedSlot.textContent = `${state.selectedDateKey} ${state.selectedTime}`;
+    menu.innerHTML = state.settings.menus.map((m) => `<option value="${m.id}">${m.name} / ¥${m.price}</option>`).join('');
+    mobility.innerHTML = state.settings.mobilityMethods
       .map((m) => `<option value="${m.id}">${m.name}${m.price ? ` / ¥${m.price}` : ''}</option>`)
       .join('');
-    optionList.innerHTML = settings.options
-      .map(
-        (o) =>
-          `<label class="checkbox-item"><input type="checkbox" name="options" value="${o.id}"/>${o.name} (+¥${o.price})</label>`,
-      )
+    optionList.innerHTML = state.settings.options
+      .map((o) => `<label class="checkbox-item"><input type="checkbox" name="options" value="${o.id}"/>${o.name} (+¥${o.price})</label>`)
       .join('');
-
-    let activeDate = null;
-    let activeTime = null;
 
     function updateTotal() {
       const selectedOptions = [...form.querySelectorAll('input[name="options"]:checked')].map((n) => n.value);
@@ -252,72 +255,59 @@
           menuId: menu.value,
           mobilityId: mobility.value,
           selectedOptions,
-          stretcher: stretcher.value,
+          stretcher: stretcher.checked,
         },
-        settings,
+        state.settings,
       );
       totalPrice.textContent = calc.total.toLocaleString('ja-JP');
       priceDetail.textContent = calc.details;
       return calc;
     }
 
-    document.getElementById('calendarGrid').addEventListener('click', (e) => {
-      const btn = e.target.closest('.slot-btn.open');
-      if (!btn) return;
-      activeDate = btn.dataset.date;
-      activeTime = btn.dataset.time;
-      selectedSlot.textContent = `選択枠: ${activeDate} ${activeTime}`;
-      formError.textContent = '';
-      form.reset();
-      updateTotal();
-      modal.showModal();
-    });
+    form.reset();
+    formError.textContent = '';
+    updateTotal();
 
-    form.addEventListener('input', updateTotal);
-    cancelBtn.addEventListener('click', () => modal.close());
+    const onInput = () => updateTotal();
+    const onCancel = () => modal.close();
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('input', onInput);
+    document.getElementById('cancelBtn').addEventListener('click', onCancel, { once: true });
+
+    form.onsubmit = (e) => {
       e.preventDefault();
-      if (!activeDate || !activeTime) return;
-
       const name = form.elements.name.value.trim();
       const phone = form.elements.phone.value.trim();
-      if (!name) {
-        formError.textContent = 'お名前を入力してください';
-        return;
-      }
-      if (!/^\d{10,11}$/.test(phone)) {
-        formError.textContent = '電話番号はハイフン無し10〜11桁で入力してください';
-        return;
-      }
+      if (!name) return (formError.textContent = '名前を入力してください');
+      if (!/^\d{10,11}$/.test(phone)) return (formError.textContent = '連絡先は10〜11桁の数字で入力してください');
 
       const calc = updateTotal();
-      const menuObj = settings.menus.find((m) => m.id === menu.value);
+      const menuObj = state.settings.menus.find((m) => m.id === menu.value);
       const record = {
         id: crypto.randomUUID(),
         name,
         phone,
-        dateKey: activeDate,
-        time: activeTime,
-        slotKey: slotKey(activeDate, activeTime),
+        dateKey: state.selectedDateKey,
+        time: state.selectedTime,
+        slotKey: slotKey(state.selectedDateKey, state.selectedTime),
         menuId: menu.value,
         menuName: menuObj?.name || '',
         mobilityId: mobility.value,
-        stretcher: stretcher.value,
+        stretcher: stretcher.checked,
         options: calc.appliedOptions,
         total: calc.total,
         status: '確定',
         createdAt: new Date().toISOString(),
       };
 
-      reservations.push(record);
-      setReservations(reservations);
+      const current = getReservations();
+      current.push(record);
+      setReservations(current);
       modal.close('ok');
-      alert(`予約を確定しました。\n合計 ¥${calc.total.toLocaleString('ja-JP')}`);
-      initPublic();
-    });
+      hooks.onBooked(`予約が確定しました：${record.dateKey} ${record.time} / ${record.name} / ¥${record.total.toLocaleString('ja-JP')}`);
+    };
 
-    updateTotal();
+    modal.showModal();
   }
 
   window.CareTaxi = {
@@ -333,7 +323,5 @@
     statusOfSlot,
   };
 
-  if (document.body.dataset.page === 'public') {
-    initPublic();
-  }
+  if (document.body.dataset.page === 'public') initPublic();
 })();
