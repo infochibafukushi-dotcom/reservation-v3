@@ -249,9 +249,9 @@
     };
   }
 
-  function initPublic() {
+  async function initPublic() {
+    await bootstrapFromGitHub();
     bindHiddenAdminEntry();
-    bootstrapFromGitHub();
 
     const state = {
       settings: getSettings(),
@@ -435,5 +435,7 @@
     calculateTotal,
   };
 
-  if (document.body.dataset.page === 'public') initPublic();
+  if (document.body.dataset.page === 'public') {
+    initPublic();
+  }
 })();
