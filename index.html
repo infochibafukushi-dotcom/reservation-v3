@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>介護タクシー予約 | 公開画面</title>
+    <meta name="description" content="介護タクシー予約システム（公開画面）" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-page="public">
+    <button id="secretAdminIcon" class="secret-icon" aria-label="管理入口">⚙</button>
+
+    <div class="app-shell">
+      <header class="topbar">
+        <h1>介護タクシー予約</h1>
+        <p id="ruleSummary">読み込み中...</p>
+      </header>
+
+      <main class="page-grid">
+        <section class="card">
+          <h2>1) 日付を選択</h2>
+          <div id="weekHeader" class="date-tabs"></div>
+
+          <h2>2) 時間スロットを選択</h2>
+          <p class="muted">◎：予約可 / ×：予約不可（予約済み・ブロック・締切）</p>
+          <div id="slotList" class="slot-list"></div>
+        </section>
+
+        <section class="card hidden" id="doneCard">
+          <h2>予約完了</h2>
+          <p id="doneMessage" class="item"></p>
+        </section>
+
+        <section class="card">
+          <h2>本日の予約状況</h2>
+          <div id="todayList" class="list"></div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="bookingModal" class="modal">
+      <form id="bookingForm" method="dialog">
+        <h3>3) 予約内容入力（カード）</h3>
+        <p id="selectedSlot" class="muted"></p>
+
+        <label>お名前<input name="name" required maxlength="40" /></label>
+        <label>連絡先（電話）<input name="phone" required inputmode="tel" placeholder="09012345678" /></label>
+        <label>移動方法<select name="mobility" id="mobility"></select></label>
+        <label>メニュー<select name="menu" id="menu"></select></label>
+        <label class="checkbox-item"><input id="stretcher" name="stretcher" type="checkbox" /> ストレッチャーを使用する</label>
+
+        <fieldset>
+          <legend>オプション</legend>
+          <div id="optionList" class="checkbox-grid"></div>
+        </fieldset>
+
+        <div class="price-box">
+          <p>料金内訳: <span id="priceDetail">-</span></p>
+          <p class="total">合計: ¥<span id="totalPrice">0</span></p>
+        </div>
+
+        <p id="formError" class="error"></p>
+
+        <div class="modal-actions">
+          <button type="button" id="cancelBtn" class="secondary">キャンセル</button>
+          <button type="submit" id="submitBtn">予約する</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="adminEntryModal" class="modal">
+      <form id="adminEntryForm" method="dialog">
+        <h3>管理ログイン</h3>
+        <label>パスワード<input id="adminEntryPassword" type="password" required /></label>
+        <p id="adminEntryError" class="error"></p>
+        <div class="modal-actions">
+          <button type="button" id="adminEntryCancel" class="secondary">閉じる</button>
+          <button type="submit">ログイン</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>
