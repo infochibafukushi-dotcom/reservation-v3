@@ -74,7 +74,9 @@
       repo: String(runtime.repo || saved.repo || ''),
       branch: String(runtime.branch || saved.branch || 'main'),
       token: String(runtime.token || saved.token || ''),
-      dbPath: String(runtime.dbPath || saved.dbPath || 'data/reservation-db.json')
+      dbPath: String(runtime.dbPath || saved.dbPath || 'data/reservation-db.json'),
+      proxyUrl: String(runtime.proxyUrl || saved.proxyUrl || ''),
+      proxyKey: String(runtime.proxyKey || saved.proxyKey || '')
     };
   }
 
@@ -238,6 +240,35 @@
 
     if (func === 'api_setGithubBackendSettings') {
       return { isOk: true, data: saveSettings(args && args[0] || {}) };
+    }
+    if (settings.proxyUrl) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (settings.proxyKey) headers['x-backend-key'] = settings.proxyKey;
+      const response = await fetch(settings.proxyUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          func,
+          args: args || [],
+          settings: {
+            owner: settings.owner,
+            repo: settings.repo,
+            branch: settings.branch,
+            dbPath: settings.dbPath
+          }
+        })
+      });
+      const text = await response.text();
+      let data = null;
+      try{
+        data = JSON.parse(text);
+      }catch(_){
+        throw new Error('Proxy応答のJSON解析に失敗しました');
+      }
+      if (!response.ok || !data || data.isOk === false){
+        throw new Error((data && (data.error || data.message)) || `Proxy呼び出し失敗: ${response.status}`);
+      }
+      return data;
     }
 
     const { db, sha } = await fetchDb(settings);
