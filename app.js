@@ -57,6 +57,10 @@
 
   async function syncToGitHub(path, json, message, storageKey) {
     if (!GITHUB_CONFIG.enabled) return;
+    if (!githubBackend.token()) {
+      console.error('[GitHub Sync] token is not set. key=', GITHUB_CONFIG.tokenStorageKey);
+      return;
+    }
     try {
       await githubBackend.writeJSON(path, json, message);
       const remote = await githubBackend.readJSON(path); // 保存→即GitHub再読込
@@ -74,9 +78,7 @@
       const reservationsRemote = await githubBackend.readJSON(GITHUB_CONFIG.reservationsPath);
       save(STORAGE.settings, settingsRemote.json);
       save(STORAGE.reservations, reservationsRemote.json);
-      // 常に取得データで上書き反映
-      setSettings(settingsRemote.json);
-      setReservations(reservationsRemote.json);
+      // 常に取得データをsave()で上書き反映
     } catch (e) {
       console.warn('[GitHub Bootstrap]', e.message);
     }
