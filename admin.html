@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>介護タクシー予約 | 管理画面</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-page="admin">
+    <div class="app-shell">
+      <header class="topbar">
+        <h1>管理画面</h1>
+        <p>簡易ログイン + 予約管理</p>
+      </header>
+
+      <main class="page-grid">
+        <section class="card" id="loginCard">
+          <h2>管理ログイン</h2>
+          <label>パスワード<input id="adminPassword" type="password" /></label>
+          <button id="loginBtn">ログイン</button>
+          <p id="loginError" class="error"></p>
+        </section>
+
+        <section class="card hidden" id="adminPanel">
+          <h2>営業・締切設定</h2>
+          <div class="grid-2">
+            <label>開始時刻<input id="startHour" type="number" min="0" max="23" /></label>
+            <label>終了時刻<input id="endHour" type="number" min="0" max="23" /></label>
+            <label>スロット間隔（分）
+              <select id="interval">
+                <option value="30">30</option>
+                <option value="60">60</option>
+              </select>
+            </label>
+            <label>締切（現在+時間）<input id="cutoffHours" type="number" min="0" max="24" /></label>
+          </div>
+          <label><input id="sameDayAllowed" type="checkbox" /> 当日予約を許可</label>
+          <button id="saveRules">設定保存</button>
+        </section>
+
+        <section class="card hidden" id="blockPanel">
+          <h2>手動ブロック設定（◎・×）</h2>
+          <div id="adminCalendarGrid" class="calendar-grid"></div>
+        </section>
+
+        <section class="card hidden" id="catalogPanel">
+          <h2>料金・メニュー・オプション管理</h2>
+          <p class="muted">JSON形式（配列）で編集して保存。例: [{"id":"normal","name":"通常送迎","price":2500}]</p>
+          <label>メニューJSON<textarea id="menuJson" rows="4"></textarea></label>
+          <label>オプションJSON<textarea id="optionJson" rows="4"></textarea></label>
+          <label>移動方法JSON<textarea id="mobilityJson" rows="4"></textarea></label>
+          <label>ストレッチャー加算<input id="stretcherFee" type="number" min="0" /></label>
+          <label>内部加算（非表示）<input id="internalFee" type="number" min="0" /></label>
+          <button id="saveCatalog">料金設定保存</button>
+          <p id="catalogError" class="error"></p>
+        </section>
+
+        <section class="card hidden" id="reservationPanel">
+          <h2>予約一覧管理</h2>
+          <div id="reservationList" class="list"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="admin.js"></script>
+  </body>
+</html>
