@@ -19,6 +19,14 @@
     reservationsPath: 'data/reservations.json',
   };
 
+
+  function validateGitHubConfig() {
+    if (!GITHUB_CONFIG.enabled) return { ok: false, reason: 'disabled' };
+    if (!GITHUB_CONFIG.owner || !GITHUB_CONFIG.repo) return { ok: false, reason: 'owner/repo not configured' };
+    if (!githubBackend.token()) return { ok: false, reason: 'token missing' };
+    return { ok: true };
+  }
+
   const githubBackend = {
     api(path) {
       return `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${path}?ref=${GITHUB_CONFIG.branch}`;
@@ -34,7 +42,9 @@
       const res = await fetch(this.api(path), { headers: this.headers() });
       if (!res.ok) throw new Error(`GitHub read failed: ${res.status}`);
       const payload = await res.json();
-      const raw = atob(payload.content.replace(/\n/g, ''));
+      const binary = atob(payload.content.replace(/\n/g, ''));
+      const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+      const raw = new TextDecoder().decode(bytes);
       return { json: JSON.parse(raw), sha: payload.sha };
     },
     async writeJSON(path, json, message) {
@@ -56,9 +66,9 @@
   };
 
   async function syncToGitHub(path, json, message, storageKey) {
-    if (!GITHUB_CONFIG.enabled) return;
-    if (!githubBackend.token()) {
-      console.error('[GitHub Sync] token is not set. key=', GITHUB_CONFIG.tokenStorageKey);
+    const check = validateGitHubConfig();
+    if (!check.ok) {
+      console.error('[GitHub Sync] skipped:', check.reason);
       return;
     }
     try {
@@ -72,7 +82,11 @@
   }
 
   async function bootstrapFromGitHub() {
-    if (!GITHUB_CONFIG.enabled) return;
+    const check = validateGitHubConfig();
+    if (!check.ok) {
+      console.error('[GitHub Bootstrap] skipped:', check.reason);
+      return;
+    }
     try {
       const settingsRemote = await githubBackend.readJSON(GITHUB_CONFIG.settingsPath);
       const reservationsRemote = await githubBackend.readJSON(GITHUB_CONFIG.reservationsPath);
