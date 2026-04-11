@@ -55,10 +55,13 @@
     },
   };
 
-  async function syncToGitHub(path, json, message) {
+  async function syncToGitHub(path, json, message, storageKey) {
     if (!GITHUB_CONFIG.enabled) return;
     try {
       await githubBackend.writeJSON(path, json, message);
+      const remote = await githubBackend.readJSON(path); // 保存→即GitHub再読込
+      save(storageKey, remote.json);
+      window.dispatchEvent(new CustomEvent('caretaxi:data-synced', { detail: { path, storageKey } }));
     } catch (e) {
       console.warn('[GitHub Sync]', e.message);
     }
@@ -121,12 +124,12 @@
   };
   const setSettings = (v) => {
     save(STORAGE.settings, v);
-    syncToGitHub(GITHUB_CONFIG.settingsPath, v, 'Update settings from booking app');
+    syncToGitHub(GITHUB_CONFIG.settingsPath, v, 'Update settings from booking app', STORAGE.settings);
   };
   const getReservations = () => load(STORAGE.reservations, []);
   const setReservations = (v) => {
     save(STORAGE.reservations, v);
-    syncToGitHub(GITHUB_CONFIG.reservationsPath, v, 'Update reservations from booking app');
+    syncToGitHub(GITHUB_CONFIG.reservationsPath, v, 'Update reservations from booking app', STORAGE.reservations);
   };
 
   const setAdminAuthenticated = (ok) => save(STORAGE.adminAuth, { ok, at: Date.now() });
@@ -313,6 +316,29 @@
     };
 
     patchSlots();
+
+    // GitHub再取得後にカレンダー描画のみ再実行
+    window.addEventListener('caretaxi:data-synced', () => {
+      state.settings = getSettings();
+      state.reservations = getReservations();
+      state.times = slotTimes(state.settings);
+      ruleSummary.textContent = `当日予約:${state.settings.sameDayAllowed ? '可' : '不可'} / 現在+${state.settings.cutoffHours}時間締切`;
+
+      const head = ['<div class="cell head"></div>']
+        .concat(state.dates.map((d) => `<div class="cell head">${d.getMonth() + 1}/${d.getDate()}</div>`))
+        .join('');
+      const rows = state.times
+        .map((t) => {
+          const cols = state.dates
+            .map((d) => `<div class="cell"><button type="button" class="slot-btn" data-date="${toDateKey(d)}" data-time="${t}">-</button></div>`)
+            .join('');
+          return `<div class="cell time">${t}</div>${cols}`;
+        })
+        .join('');
+      calendarGrid.innerHTML = head + rows;
+
+      patchSlots();
+    });
   }
 
   function openBookingModal(state, onBooked) {
