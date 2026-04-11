@@ -197,7 +197,7 @@
       openBookingModal(state, {
         onBooked: (message) => {
           doneCard.classList.remove('hidden');
-          doneMessage.textContent = message;
+          doneMessage.innerHTML = message;
           state.reservations = getReservations();
           patchSlotStates();
         },
@@ -274,7 +274,7 @@
       });
       setReservations(current);
       modal.close('ok');
-      hooks.onBooked(`予約が確定しました：${state.selectedDateKey} ${state.selectedTime} / ${name} / ¥${calc.total.toLocaleString('ja-JP')}`);
+      hooks.onBooked(`<strong>予約ID:</strong> ${current[current.length-1].id}<br><strong>内容:</strong> ${state.selectedDateKey} ${state.selectedTime} / ${name}<br>内容確認のため、以下の番号[090-6331-4289]よりお電話をさせていただきます。<br>確認が取れたら、正式な予約完了と致します。`);
     };
 
     modal.showModal();

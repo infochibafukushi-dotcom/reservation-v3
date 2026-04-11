@@ -20,7 +20,7 @@
       <main class="page-grid">
         <section class="card">
           <button class="secondary full" type="button">他時間予約</button>
-          <p class="muted center">◎ 予約可能 ／ × 予約不可</p>
+          <p class="muted center">◎ 予約可能 ／ × 予約不可 ／ ◎ 読み込み中（確定前）</p>
           <p class="muted center">上下・左右にスクロールして、他の日付や時間を確認できます。</p>
           <div id="dateNav" class="date-nav"></div>
           <div class="calendar-wrap">
@@ -30,7 +30,7 @@
 
         <section class="card hidden" id="doneCard">
           <h2>ご予約ありがとうございます</h2>
-          <p id="doneMessage" class="item"></p>
+          <div id="doneMessage" class="item"></div>
         </section>
 
         <section class="card">
@@ -56,9 +56,9 @@
         <label>ご利用区分 *
           <select name="usageType" required>
             <option value="">選択してください</option>
-            <option value="self">ご本人</option>
-            <option value="family">ご家族</option>
-            <option value="facility">施設</option>
+            <option value="">選択してください</option>
+            <option value="first">初めて</option>
+            <option value="repeat">2回目以上</option>
           </select>
         </label>
         <label>お名前(カタカナ) *<input name="name" required maxlength="40" placeholder="ヤマダ タロウ" /></label>
@@ -73,6 +73,7 @@
         <label>移動方法 *<select name="mobility" id="mobility" required></select></label>
         <label>介助内容 *<select name="menu" id="menu" required></select></label>
 
+        <p class="muted">最初に移動方法をお選びください</p>
         <label>階段介助 *
           <select name="stairAssist" id="stairAssist">
             <option value="none">不要(0円)</option>
@@ -80,6 +81,17 @@
             <option value="stairs">階段移動(+1500円)</option>
           </select>
         </label>
+        <p class="error">警告: 階段介助ご利用の場合、身体介助がセットになります</p>
+
+        <label>機材レンタル *
+          <select name="rental">
+            <option value="none">不要</option>
+            <option value="wheel">車いす</option>
+            <option value="stretcher">ストレッチャー</option>
+          </select>
+        </label>
+        <p class="error">警告: 車いす固定による傷、すり傷などは保証対象外になります</p>
+        <p class="error">警告: ストレッチャー利用時に2名体制介助料5,000円と身体介助が必須となります</p>
 
         <label>往復送迎 *
           <select name="roundTrip" id="roundTrip">
@@ -101,7 +113,7 @@
           <p>配車予約: ¥<span id="dispatchFee">500</span></p>
           <p>特殊車両使用料: ¥<span id="vehicleFee">1000</span></p>
           <p class="total">概算合計: ¥<span id="totalPrice">0</span></p>
-          <p class="muted" id="priceDetail">上記料金に加え距離・時間により運賃は加算されます。</p>
+          <p class="muted" id="priceDetail">上記料金に加え、距離運賃(2km以上200mごと/90円)と低速時の時間制運賃(1分30秒毎/90円)が加算されます。</p>
         </div>
 
         <p id="formError" class="error"></p>
